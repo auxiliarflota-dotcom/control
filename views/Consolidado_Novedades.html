@@ -141,15 +141,22 @@
             btn.textContent = "Guardando...";
             try {
                 const fecha = fechaRegistro.value;
-                const operario = document.getElementById("operario").value.trim();
+                const inputOperario = document.getElementById("operario").value.trim();
                 const observacionTexto = document.getElementById("observacion").value.trim();
                 const opciones = Array.from(document.querySelectorAll('#listaOperarios option')).map(o => o.value);
+
+                // Validación insensible a mayúsculas
+                const operarioEncontrado = opciones.find(op => op.toLowerCase() === inputOperario.toLowerCase());
+                const operario = operarioEncontrado || ""; // Usar el nombre con la capitalización correcta
+
                 const checks = document.querySelectorAll('.checkbox-item input:checked');
                 let seleccion = [];
                 checks.forEach(c => seleccion.push(c.value));
 
-                if (!fecha || !opciones.includes(operario) || seleccion.length === 0 || !observacionTexto) {
-                    alertar("No ha llenado todos los campos para registrar la novedad", 'warning');
+                if (!fecha || !operario || seleccion.length === 0 || !observacionTexto) {
+                    let msg = "No ha llenado todos los campos para registrar la novedad";
+                    if (inputOperario && !operario) msg = "El operario ingresado no es válido o no está activo.";
+                    alertar(msg, 'warning');
                     btn.disabled = false;
                     btn.textContent = "Guardar";
                     return;
