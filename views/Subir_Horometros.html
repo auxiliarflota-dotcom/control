@@ -46,17 +46,13 @@
 
     <script>
         // URL de la Web App de Google Sheets (Unificada para evitar errores)
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby_j1CsiDbf3a5BypKslcX2SjGuqTDtk_bdqLguSdeQ4Vk2_cdl3m-s_jNG6owCc31p0A/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby2qh617bRN5RXeJZsXou3J5f6uIpN_IKkvkS8VdZHotZiM8T4sxczwWULsPjUBdee5Iw/exec";
 
-        // Fecha automática (Hoy por defecto)
         const hoy = new Date();
         const yyyy = hoy.getFullYear();
         const mm = String(hoy.getMonth() + 1).padStart(2, "0");
         const dd = String(hoy.getDate()).padStart(2, "0");
-        const fechaParaInput = `${yyyy}-${mm}-${dd}`;
-        const fechaParaSheets = `${dd}/${mm}/${yyyy}`;
-
-        document.getElementById("fechaInput").value = fechaParaInput;
+        document.getElementById("fechaInput").value = `${yyyy}-${mm}-${dd}`;
 
         function obtenerFechaFormateada() {
             const val = document.getElementById("fechaInput").value; // yyyy-mm-dd
@@ -72,17 +68,37 @@
 
         // Función para cargar metadatos (Equipos)
         async function fetchMetadata() {
-            tbody.innerHTML = `<tr><td colspan="2" style="padding:20px;">Cargando equipos...</td></tr>`;
-            try {
-                const res = await fetch(`${WEB_APP_URL}?action=getMetadata`);
-                const data = await res.json();
-                equipos = data.equipos || [];
+            // 1. Intentar cargar desde Cache (localStorage)
+            const cached = localStorage.getItem("cache_equipos");
+            if (cached) {
+                equipos = JSON.parse(cached);
                 renderTabla();
                 recuperarProgreso();
                 cargarPlaceholders();
+            } else {
+                tbody.innerHTML = `<tr><td colspan="2" style="padding:20px;">Cargando equipos...</td></tr>`;
+            }
+
+            // 2. Actualizar desde Google Sheets en segundo plano
+            try {
+                const res = await fetch(`${WEB_APP_URL}?action=getMetadata`);
+                const data = await res.json();
+
+                // Guardar en cache para la próxima vez
+                localStorage.setItem("cache_equipos", JSON.stringify(data.equipos || []));
+
+                // Si los datos cambiaron o no había cache, actualizar la interfaz
+                if (JSON.stringify(equipos) !== JSON.stringify(data.equipos)) {
+                    equipos = data.equipos || [];
+                    renderTabla();
+                    recuperarProgreso(); // Volver a aplicar valores ingresados
+                    cargarPlaceholders(); // Actualizar placeholders con los nuevos equipos
+                }
             } catch (err) {
                 console.error("Error cargando metadatos:", err);
-                tbody.innerHTML = `<tr><td colspan="2" style="padding:20px; color:red;">Error al cargar equipos</td></tr>`;
+                if (!cached) {
+                    tbody.innerHTML = `<tr><td colspan="2" style="padding:20px; color:red;">Error al cargar equipos</td></tr>`;
+                }
             }
         }
 
@@ -233,25 +249,31 @@
 
             fetch(WEB_APP_URL, {
                 method: "POST",
-                body: formData
+                body: formData,
+                mode: "cors",
+                redirect: "follow"
             })
                 .then(res => res.json())
                 .then(d => {
-                    Swal.fire({
-                        icon: "success",
-                        title: "¡Guardado!",
-                        text: "Datos guardados correctamente en Google Sheets.",
-                        confirmButtonColor: "#27ae60"
-                    }).then(() => {
-                        resetearCampos();
-                        cargarPlaceholders();
-                    });
+                    if (d.status === "success" || d.result === "success") {
+                        Swal.fire({
+                            icon: "success",
+                            title: "¡Guardado!",
+                            text: "Datos guardados correctamente en Google Sheets.",
+                            confirmButtonColor: "#27ae60"
+                        }).then(() => {
+                            resetearCampos();
+                            cargarPlaceholders();
+                        });
+                    } else {
+                        throw new Error(d.message || "Error desconocido");
+                    }
                 })
                 .catch(e => {
                     Swal.fire({
                         icon: "error",
                         title: "Error al guardar",
-                        text: "Revisa que la Web App esté publicada como 'Cualquiera, incluso anónimo'.",
+                        text: "Error: " + e.message + ". Verifica que la Web App esté desplegada como 'Cualquiera'.",
                         confirmButtonColor: "#e74c3c"
                     });
                     console.error(e);

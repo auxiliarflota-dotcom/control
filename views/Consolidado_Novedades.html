@@ -65,27 +65,48 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby_j1CsiDbf3a5BypKslcX2SjGuqTDtk_bdqLguSdeQ4Vk2_cdl3m-s_jNG6owCc31p0A/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby2qh617bRN5RXeJZsXou3J5f6uIpN_IKkvkS8VdZHotZiM8T4sxczwWULsPjUBdee5Iw/exec";
 
         /* ── Carga de Metadatos (Operarios) ────────────────────────────────────── */
         async function fetchMetadata() {
             const inputOp = document.getElementById("operario");
-            inputOp.placeholder = "Cargando operarios...";
+
+            // 1. Intentar cargar desde Cache (localStorage)
+            const cached = localStorage.getItem("cache_operarios");
+            if (cached) {
+                const operarios = JSON.parse(cached);
+                renderOperarios(operarios);
+                inputOp.placeholder = "Buscar operario...";
+            } else {
+                inputOp.placeholder = "Cargando operarios...";
+            }
+
+            // 2. Actualizar desde Google Sheets en segundo plano
             try {
                 const res = await fetch(`${WEB_APP_URL}?action=getMetadata`);
                 const data = await res.json();
-                const dl = document.getElementById("listaOperarios");
-                dl.innerHTML = "";
-                (data.operarios || []).forEach(op => {
-                    const opt = document.createElement("option");
-                    opt.value = op;
-                    dl.appendChild(opt);
-                });
+                const operarios = data.operarios || [];
+
+                // Guardar en cache para la próxima vez
+                localStorage.setItem("cache_operarios", JSON.stringify(operarios));
+
+                // Actualizar la lista en pantalla
+                renderOperarios(operarios);
                 inputOp.placeholder = "Buscar operario...";
             } catch (err) {
                 console.error("Error cargando operarios:", err);
-                inputOp.placeholder = "Error al cargar";
+                if (!cached) inputOp.placeholder = "Error al cargar";
             }
+        }
+
+        function renderOperarios(operarios) {
+            const dl = document.getElementById("listaOperarios");
+            dl.innerHTML = "";
+            operarios.forEach(op => {
+                const opt = document.createElement("option");
+                opt.value = op;
+                dl.appendChild(opt);
+            });
         }
 
         /* ── SweetAlert ────────────────────────────────────────────────────────── */
@@ -114,9 +135,10 @@
         });
 
         /* ── Guardar novedad ────────────────────────────────────────────────────── */
-        function guardarNovedad() {
+        async function guardarNovedad() {
             const btn = document.getElementById("btnGuardar");
             btn.disabled = true;
+            btn.textContent = "Guardando...";
             try {
                 const fecha = fechaRegistro.value;
                 const operario = document.getElementById("operario").value.trim();
@@ -129,30 +151,55 @@
                 if (!fecha || !opciones.includes(operario) || seleccion.length === 0 || !observacionTexto) {
                     alertar("No ha llenado todos los campos para registrar la novedad", 'warning');
                     btn.disabled = false;
+                    btn.textContent = "Guardar";
                     return;
                 }
 
-                let datos = JSON.parse(localStorage.getItem("novedades")) || [];
-                datos.push({
-                    fecha, operario,
-                    golpes: seleccion.includes("Golpes") ? 1 : null,
-                    rayones: seleccion.includes("Rayones") ? 1 : null,
-                    video360: seleccion.includes("Video 360") ? 1 : null,
-                    formato: seleccion.includes("Formato") ? 1 : null,
-                    digital: seleccion.includes("Digital") ? 1 : null,
-                    observacion: observacionTexto
-                });
-                localStorage.setItem("novedades", JSON.stringify(datos));
-                alertar("Novedad guardada correctamente", 'success');
+                // Formatear para GAS: Fecha|Operario|Golpes|Rayones|Video 360|Formato|Digital|Observación
+                const registro = [
+                    fecha,
+                    operario,
+                    seleccion.includes("Golpes") ? 1 : 0,
+                    seleccion.includes("Rayones") ? 1 : 0,
+                    seleccion.includes("Video 360") ? 1 : 0,
+                    seleccion.includes("Formato") ? 1 : 0,
+                    seleccion.includes("Digital") ? 1 : 0,
+                    observacionTexto || "Sin observación"
+                ].join("|");
 
-                document.getElementById("operario").value = "";
-                document.querySelectorAll('.checkbox-item input').forEach(c => c.checked = false);
-                document.getElementById("observacion").value = "";
-                fechaRegistro.value = new Date().toISOString().split("T")[0];
+                const formData = new URLSearchParams();
+                formData.append("action", "saveNovedades");
+                formData.append("datos", registro);
+
+                fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: formData
+                })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === "success") {
+                            alertar("Novedad guardada correctamente en Google Sheets", 'success');
+                            document.getElementById("operario").value = "";
+                            document.querySelectorAll('.checkbox-item input').forEach(c => c.checked = false);
+                            document.getElementById("observacion").value = "";
+                            fechaRegistro.value = new Date().toISOString().split("T")[0];
+                        } else {
+                            throw new Error(res.message || "Error al guardar");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error al guardar:", err);
+                        alertar("Error al guardar: " + err.message, 'error');
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.textContent = "Guardar";
+                    });
             } catch (e) {
-                alertar("Error al guardar: " + e.message, 'error');
+                alertar("Error: " + e.message, 'error');
+                btn.disabled = false;
+                btn.textContent = "Guardar";
             }
-            btn.disabled = false;
         }
 
         /* ── Generar reporte Excel con ExcelJS ──────────────────────────────────── */
@@ -176,12 +223,21 @@
                 const nombreMes = meses[parseInt(partesFin[1], 10) - 1];
                 const fileName = `Consolidado Novedades - ${nombreMes} ${yyyyFin}.xlsx`;
 
-                /* Datos */
-                let raw = JSON.parse(localStorage.getItem("novedades")) || [];
+                /* Datos desde Google Sheets */
+                let raw = [];
+                try {
+                    const resNovedades = await fetch(`${WEB_APP_URL}?action=getNovedades`);
+                    raw = await resNovedades.json();
+                } catch (err) {
+                    console.error("Error cargando novedades:", err);
+                    alertar("Error al conectar con Google Sheets", 'error');
+                    btn.disabled = false; return;
+                }
+
                 raw = raw.map(d => {
-                    function num(v) { return v === null || v === undefined ? null : (Number(v) || 0); }
+                    function num(v) { return v === "" || v === null || v === undefined ? null : (Number(v) || 0); }
                     return {
-                        Fecha: d.fecha || "",
+                        Fecha: d.fecha ? new Date(d.fecha).toISOString().split('T')[0] : "",
                         Operario: d.operario || "",
                         Golpes: num(d.golpes),
                         Rayones: num(d.rayones),
@@ -337,7 +393,7 @@
                 alertar("Excel generado correctamente", 'success');
 
             } catch (e) {
-                alertar("Error al generar Excel: " + e.message, 'error');
+                alertar("Error al generar reporte: " + e.message, 'error');
             }
             btn.disabled = false;
         }

@@ -6,9 +6,76 @@ Este archivo contiene una copia de seguridad del código de Google Apps Script u
 
 ```javascript
 /**
- * Función para guardar los datos enviados desde el formulario (POST)
+ * Función para recibir datos (POST)
  */
 function doPost(e) {
+  var action = e.parameter.action;
+  
+  if (action === "saveNovedades") {
+    return saveNovedades(e);
+  } else {
+    // Por defecto, o si es para horómetros
+    return saveHorometros(e);
+  }
+}
+
+/**
+ * Guarda las novedades en la hoja "Novedades"
+ */
+function saveNovedades(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Novedades");
+    
+    // Si la hoja no existe, la crea con encabezados
+    if (!sheet) {
+      sheet = ss.insertSheet("Novedades");
+      sheet.appendRow(["Fecha", "Operario", "Golpes", "Rayones", "Video 360", "Formato", "Digital", "Observación"]);
+    }
+    
+    var datosRaw = e.parameter.datos;
+    if (!datosRaw) {
+      return ContentService.createTextOutput(JSON.stringify({ "status": "error", "message": "No se recibieron datos" }))
+             .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var filasRaw = datosRaw.split("||");
+    var filasParaInsertar = [];
+    
+    for (var i = 0; i < filasRaw.length; i++) {
+        var columnas = filasRaw[i].split("|");
+        // Aseguramos que tenga al menos los campos básicos
+        if (columnas.length < 2) continue;
+        
+        filasParaInsertar.push([
+          columnas[0] || "", // Fecha
+          columnas[1] || "", // Operario
+          columnas[2] || 0,  // Golpes
+          columnas[3] || 0,  // Rayones
+          columnas[4] || 0,  // Video 360
+          columnas[5] || 0,  // Formato
+          columnas[6] || 0,  // Digital
+          columnas[7] || ""  // Observación
+        ]);
+    }
+    
+    if (filasParaInsertar.length > 0) {
+      sheet.getRange(sheet.getLastRow() + 1, 1, filasParaInsertar.length, 8).setValues(filasParaInsertar);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ "status": "success" }))
+           .setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ "status": "error", "message": err.message }))
+           .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Guarda los horómetros en la hoja "Registros"
+ */
+function saveHorometros(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName("Registros");
@@ -90,7 +157,7 @@ function doGet(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 2. Obtener últimos horómetros (Existente)
+    // 2. Obtener últimos horómetros
     if (action === "getLatest") {
       var sheet = ss.getSheetByName("Registros");
       if (!sheet) throw new Error("No se encontró la hoja 'Registros'");
@@ -106,6 +173,30 @@ function doGet(e) {
         }
       }
       return ContentService.createTextOutput(JSON.stringify(latest))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 3. Obtener novedades (Nuevo)
+    if (action === "getNovedades") {
+      var sheet = ss.getSheetByName("Novedades");
+      if (!sheet) return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+      
+      var data = sheet.getDataRange().getValues();
+      var resultados = [];
+      
+      for (var i = 1; i < data.length; i++) {
+        resultados.push({
+          fecha: data[i][0],
+          operario: data[i][1],
+          golpes: data[i][2],
+          rayones: data[i][3],
+          video360: data[i][4],
+          formato: data[i][5],
+          digital: data[i][6],
+          observacion: data[i][7]
+        });
+      }
+      return ContentService.createTextOutput(JSON.stringify(resultados))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
