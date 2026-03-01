@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Version: 1.1.1
+:: Version: 1.1.2
 
 :: Verificar si Git esta inicializado
 if not exist ".git" (
@@ -19,16 +19,12 @@ echo === Repositorio: analistaFlota ===
 echo Version actual: %current_version%
 echo.
 
-set /p "new_version=Introduce la nueva version (ej: 1.1.2) o Enter para mantener: "
+set /p "new_version=Introduce la nueva version (ej: 1.1.3) o Enter para mantener: "
 if "%new_version%"=="" set "new_version=%current_version%"
 
 echo.
 set /p "msg=Introduce el mensaje del commit: "
 if "%msg%"=="" set "msg=Actualizacion automatica"
-
-echo.
-echo === Sincronizando con GitHub (Pull) ===
-git pull --rebase origin main
 
 echo.
 echo === Agregando cambios ===
@@ -37,6 +33,10 @@ git add .
 echo.
 echo === Creando commit ===
 git commit -m "[v%new_version%] %msg%"
+
+echo.
+echo === Sincronizando con GitHub (Pull) ===
+git pull --rebase origin main
 
 echo.
 echo === Subiendo a GitHub (Push) ===
@@ -54,7 +54,7 @@ if not "%new_version%"=="%current_version%" (
     echo.
     echo Actualizando version en el script...
     set "MYPATH=%~f0"
-    powershell -Command "$p = $env:MYPATH; (Get-Content $p) -replace ':: Version: %current_version%', ':: Version: %new_version%' | Set-Content $p -Encoding ASCII"
+    powershell -Command "$p = $env:MYPATH; $c = (Get-Content $p); $c = $c -replace ':: Version: %current_version%', ':: Version: %new_version%'; Set-Content -Path $p -Value $c -Encoding ASCII"
 )
 
 echo.
