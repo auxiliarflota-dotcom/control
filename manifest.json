@@ -1,0 +1,21 @@
+{
+    "name": "Control de Flota Fabián",
+    "short_name": "Flota",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#2563eb",
+    "icons": [
+        {
+            "src": "./favicon.gif",
+            "sizes": "32x32",
+            "type": "image/gif"
+        },
+        {
+            "src": "./favicon.gif",
+            "sizes": "192x192",
+            "type": "image/gif",
+            "purpose": "any maskable"
+        }
+    ]
+}

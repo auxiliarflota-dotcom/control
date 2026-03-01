@@ -1,0 +1,134 @@
+body {
+    margin: 0;
+    font-family: 'Inter', Arial, sans-serif;
+    background: #f2f2f2;
+}
+
+header {
+    background: #2e4a92;
+    color: white;
+    text-align: center;
+    padding: 18px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.card {
+    background: white;
+    margin: 15px;
+    padding: 20px;
+    border-radius: 18px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+h2 {
+    color: #2e4a92;
+    margin-top: 0;
+    text-align: center;
+}
+
+.fecha {
+    font-size: 18px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+#fechaInput {
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background: #f9f9f9;
+    color: #2e4a92;
+    font-weight: bold;
+    cursor: pointer;
+    width: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    margin-top: 10px;
+    background: white;
+}
+
+th,
+td {
+    border: 1px solid white;
+    padding: 12px;
+    text-align: center;
+    font-size: 16px;
+}
+
+th {
+    background: #2e4a92;
+    color: white;
+    font-weight: bold;
+}
+
+th:first-child {
+    border-right: none;
+    width: 40%;
+}
+
+th:last-child {
+    border-left: none;
+}
+
+td:first-child {
+    width: 40%;
+    font-weight: bold;
+    color: #2e4a92;
+    background: #f8f9fa;
+}
+
+input {
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box;
+    background: #f9f9f9;
+}
+
+input:focus {
+    outline: none;
+    border: 1px solid #2e4a92;
+    background: #fff;
+}
+
+button {
+    margin-top: 20px;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    width: 100%;
+    background: #1f9d45;
+    color: white;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+}
+
+button:hover:not(:disabled) {
+    background: #1a8a3d;
+}
+
+button:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.error {
+    background-color: #ffd6d6;
+}

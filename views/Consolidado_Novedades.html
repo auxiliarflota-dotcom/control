@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consolidado Novedades</title>
+
+    <!-- ExcelJS: soporte completo de estilos en el navegador -->
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link rel="icon" type="image/gif" href="../favicon.gif">
+    <link rel="apple-touch-icon" href="../favicon.gif">
+    <link rel="manifest" href="../manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2563eb">
+
+    <link rel="stylesheet" href="../css/novedades.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <header>Consolidado Novedades</header>
+
+    <div class="card">
+        <h2>Registrar Novedad</h2>
+
+        <label>Fecha</label>
+        <input type="date" id="fechaRegistro">
+
+        <label>Operario</label>
+        <input type="text" id="operario" placeholder="Buscar operario..." list="listaOperarios">
+
+        <datalist id="listaOperarios">
+            <option>Alvaro David Tarazona Escalante</option>
+            <option>Camilo Andres Suarez Silva</option>
+            <option>Carlos Alberto Lascano Salgado</option>
+            <option>Danilo Ardila Pinzon</option>
+            <option>Darwin Milciades Torres Jimenez</option>
+            <option>Didier Piña Lozano</option>
+            <option>Duvan Octavio Hernandez Valero</option>
+            <option>Edgar Adrian Alvarez Flechas</option>
+            <option>Eduardo Orejarena Ponton</option>
+            <option>Edwin Fabian Arciniegas</option>
+            <option>Eliecer Amaya Luque</option>
+            <option>Eugenio Aguilar Hernandez</option>
+            <option>Fabio Enrique Niño Barillas</option>
+            <option>Favian Sly Roman Quesada</option>
+            <option>Freddy Urbina Guerra</option>
+            <option>Javier Ernesto Saavedra Gomez</option>
+            <option>Jhon Fredy Gonzalez Salinas</option>
+            <option>John Alexander Hernandez Valero</option>
+            <option>Jose Benito Infante</option>
+            <option>Juan Carlos Fierro Mendez</option>
+            <option>Juan Carlos Ramirez Mayorga</option>
+            <option>Justin Alexander Tapia Molina</option>
+            <option>Leonardo Grimaldos Ortiz</option>
+            <option>Luis Arturo Lizcano Moreno</option>
+            <option>Luis Felipe Gamboa Castro</option>
+            <option>Marco Fabian Ramirez Pinzon</option>
+            <option>Mario Cuadros</option>
+            <option>Miguel Angel Borrero Tarazona</option>
+            <option>Mustafa Damian Castro Olivero</option>
+            <option>Ricardo Henry Saavedra Lizarazo</option>
+            <option>Wilmar Martínez Gómez</option>
+            <option>Wilmer Alexander Joya Llanes</option>
+            <option>Wilmer Moreno Rojas</option>
+            <option>Yefer Meneses Ramon</option>
+            <option>Yerson Hernando Bautista Sanchez</option>
+            <option>Yordan Esneider Arriola Galvis</option>
+        </datalist>
+
+        <label>Tipo de Novedad</label>
+        <div class="checkbox-group">
+            <div class="checkbox-item"><input type="checkbox" value="Golpes"> Golpeó el equipo</div>
+            <div class="checkbox-item"><input type="checkbox" value="Rayones"> Rayó el equipo</div>
+            <div class="checkbox-item"><input type="checkbox" value="Video 360"> No realizó vídeo 360</div>
+            <div class="checkbox-item"><input type="checkbox" value="Formato"> No realizó formato preoperacional</div>
+            <div class="checkbox-item"><input type="checkbox" value="Digital"> No realizó preoperacional digital</div>
+        </div>
+
+        <label>Observación</label>
+        <textarea id="observacion" rows="3"></textarea>
+
+        <button id="btnGuardar" class="btn-guardar" onclick="guardarNovedad()">Guardar</button>
+        <button class="btn-reporte" style="background:#888; margin-top:10px;"
+            onclick="location.href='../index.html'">Volver al Menú</button>
+    </div>
+
+    <div class="card">
+        <h2>Generar Reporte</h2>
+        <div class="rango-fechas">
+            <input type="date" id="fechaInicio">
+            <input type="date" id="fechaFin">
+        </div>
+        <button id="btnReporte" class="btn-reporte" onclick="generarReporte()">Descargar Excel</button>
+    </div>
+
+    <script>
+        /* ── SweetAlert ────────────────────────────────────────────────────────── */
+        function alertar(msg, icon = 'success') {
+            const colors = { success: '#1f9d45', error: '#c0392b', warning: '#e67e22', info: '#2e4a92' };
+            Swal.fire({
+                icon: icon,
+                title: msg,
+                confirmButtonColor: colors[icon] || '#2e4a92'
+            });
+        }
+
+        /* ── Fechas iniciales ───────────────────────────────────────────────────── */
+        document.addEventListener("DOMContentLoaded", function () {
+            const hoy = new Date();
+            const yyyy = hoy.getFullYear();
+            const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dd = String(hoy.getDate()).padStart(2, '0');
+            fechaRegistro.value = `${yyyy}-${mm}-${dd}`;
+            fechaFin.value = `${yyyy}-${mm}-${dd}`;
+
+            let mesAnt = hoy.getMonth(), yrIni = yyyy;
+            if (mesAnt === 0) { mesAnt = 12; yrIni--; }
+            fechaInicio.value = `${yrIni}-${String(mesAnt).padStart(2, '0')}-26`;
+        });
+
+        /* ── Guardar novedad ────────────────────────────────────────────────────── */
+        function guardarNovedad() {
+            const btn = document.getElementById("btnGuardar");
+            btn.disabled = true;
+            try {
+                const fecha = fechaRegistro.value;
+                const operario = document.getElementById("operario").value.trim();
+                const observacionTexto = document.getElementById("observacion").value.trim();
+                const opciones = Array.from(document.querySelectorAll('#listaOperarios option')).map(o => o.value);
+                const checks = document.querySelectorAll('.checkbox-item input:checked');
+                let seleccion = [];
+                checks.forEach(c => seleccion.push(c.value));
+
+                if (!fecha || !opciones.includes(operario) || seleccion.length === 0 || !observacionTexto) {
+                    alertar("No ha llenado todos los campos para registrar la novedad", 'warning');
+                    btn.disabled = false;
+                    return;
+                }
+
+                let datos = JSON.parse(localStorage.getItem("novedades")) || [];
+                datos.push({
+                    fecha, operario,
+                    golpes: seleccion.includes("Golpes") ? 1 : null,
+                    rayones: seleccion.includes("Rayones") ? 1 : null,
+                    video360: seleccion.includes("Video 360") ? 1 : null,
+                    formato: seleccion.includes("Formato") ? 1 : null,
+                    digital: seleccion.includes("Digital") ? 1 : null,
+                    observacion: observacionTexto
+                });
+                localStorage.setItem("novedades", JSON.stringify(datos));
+                alertar("Novedad guardada correctamente", 'success');
+
+                document.getElementById("operario").value = "";
+                document.querySelectorAll('.checkbox-item input').forEach(c => c.checked = false);
+                document.getElementById("observacion").value = "";
+                fechaRegistro.value = new Date().toISOString().split("T")[0];
+            } catch (e) {
+                alertar("Error al guardar: " + e.message, 'error');
+            }
+            btn.disabled = false;
+        }
+
+        /* ── Generar reporte Excel con ExcelJS ──────────────────────────────────── */
+        async function generarReporte() {
+            const btn = document.getElementById("btnReporte");
+            btn.disabled = true;
+            try {
+                const inicio = fechaInicio.value;
+                const fin = fechaFin.value;
+
+                if (!inicio || !fin || inicio > fin) {
+                    alertar("Rango de fechas inválido", 'warning');
+                    btn.disabled = false; return;
+                }
+
+                /* Nombre del archivo: mes de la fecha final */
+                const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                const partesFin = fin.split('-');
+                const yyyyFin = partesFin[0];
+                const nombreMes = meses[parseInt(partesFin[1], 10) - 1];
+                const fileName = `Consolidado Novedades - ${nombreMes} ${yyyyFin}.xlsx`;
+
+                /* Datos */
+                let raw = JSON.parse(localStorage.getItem("novedades")) || [];
+                raw = raw.map(d => {
+                    function num(v) { return v === null || v === undefined ? null : (Number(v) || 0); }
+                    return {
+                        Fecha: d.fecha || "",
+                        Operario: d.operario || "",
+                        Golpes: num(d.golpes),
+                        Rayones: num(d.rayones),
+                        "Video 360": num(d.video360),
+                        Formato: num(d.formato),
+                        Digital: num(d.digital),
+                        Observacion: d.observacion || ""
+                    };
+                });
+                let filtrados = raw.filter(d => d.Fecha >= inicio && d.Fecha <= fin);
+
+                if (filtrados.length === 0) {
+                    alertar("No hay datos en ese rango", 'info');
+                    btn.disabled = false; return;
+                }
+
+                const wb = new ExcelJS.Workbook();
+
+                /* Estilos compartidos */
+                const bordeDelgado = { style: 'thin', color: { argb: 'FF000000' } };
+                const bordeTodos = { top: bordeDelgado, bottom: bordeDelgado, left: bordeDelgado, right: bordeDelgado };
+                const fillGris = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9D9D9' } };
+                const fillNaranja = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2750A' } };
+
+                function aplicarBorde(cell) { cell.border = bordeTodos; }
+
+                function estEncabezado(cell, texto) {
+                    cell.value = texto;
+                    cell.fill = fillGris;
+                    cell.font = { bold: true, color: { argb: 'FF000000' } };
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    cell.border = bordeTodos;
+                }
+
+                /* ── HOJA DETALLE ──────────────────────────────────────────────── */
+                const wsD = wb.addWorksheet('Detalle');
+                wsD.columns = [
+                    { key: 'Fecha', width: 14 },
+                    { key: 'Operario', width: 36 },
+                    { key: 'Golpes', width: 10 },
+                    { key: 'Rayones', width: 10 },
+                    { key: 'Video 360', width: 12 },
+                    { key: 'Formato', width: 11 },
+                    { key: 'Digital', width: 11 },
+                    { key: 'Observacion', width: 40 }
+                ];
+
+                const colsDetalle = ['Fecha', 'Operario', 'Golpes', 'Rayones', 'Video 360', 'Formato', 'Digital', 'Observacion'];
+                const headerRowD = wsD.addRow(colsDetalle);
+                headerRowD.eachCell(cell => estEncabezado(cell, cell.value));
+                headerRowD.height = 20;
+
+                const alinDetalle = {
+                    Fecha: 'left', Operario: 'left', Golpes: 'center', Rayones: 'center',
+                    'Video 360': 'center', Formato: 'center', Digital: 'center', Observacion: 'left'
+                };
+                filtrados.forEach(row => {
+                    // null → undefined para que ExcelJS deje la celda vacía
+                    const r = wsD.addRow(colsDetalle.map(c => row[c] === null ? undefined : row[c]));
+                    for (let i = 1; i <= colsDetalle.length; i++) {
+                        const cell = r.getCell(i);
+                        const col = colsDetalle[i - 1];
+                        cell.alignment = { horizontal: alinDetalle[col], vertical: 'middle' };
+                        aplicarBorde(cell);
+                    }
+                });
+
+                /* ── HOJA RESUMEN ──────────────────────────────────────────────── */
+                const wsR = wb.addWorksheet('Resumen');
+                wsR.columns = [
+                    { key: 'Operario', width: 36 },
+                    { key: 'Golpes', width: 10 },
+                    { key: 'Rayones', width: 10 },
+                    { key: 'Video 360', width: 12 },
+                    { key: 'Formato', width: 11 },
+                    { key: 'Digital', width: 11 },
+                    { key: 'Total', width: 10 }
+                ];
+
+                /* Fila 1: título naranja combinado A1:G1 */
+                const tituloRow = wsR.addRow(['Resumen de Novedades', '', '', '', '', '', '']);
+                wsR.mergeCells('A1:G1');
+                const tituloCell = wsR.getCell('A1');
+                tituloCell.value = 'Resumen de Novedades';
+                tituloCell.fill = fillNaranja;
+                tituloCell.font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } };
+                tituloCell.alignment = { horizontal: 'center', vertical: 'middle' };
+                tituloCell.border = bordeTodos;
+                tituloRow.height = 24;
+                // Aplicar borde a todas las celdas del merge
+                ['A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1'].forEach(addr => {
+                    wsR.getCell(addr).border = bordeTodos;
+                });
+
+                /* Fila 2: encabezados gris */
+                const colsResumen = ['Operario', 'Golpes', 'Rayones', 'Video 360', 'Formato', 'Digital', 'Total'];
+                const headerRowR = wsR.addRow(colsResumen);
+                headerRowR.eachCell(cell => estEncabezado(cell, cell.value));
+                headerRowR.height = 20;
+
+                /* Todos los operarios con sus totales (0 si no tuvo novedades) */
+                const todosOps = Array.from(document.querySelectorAll('#listaOperarios option')).map(o => o.value);
+                let resMap = {};
+                todosOps.forEach(op => {
+                    resMap[op] = { Operario: op, Golpes: null, Rayones: null, 'Video 360': null, Formato: null, Digital: null, Total: null };
+                });
+                filtrados.forEach(d => {
+                    if (resMap[d.Operario]) {
+                        resMap[d.Operario].Golpes = (resMap[d.Operario].Golpes || 0) + d.Golpes;
+                        resMap[d.Operario].Rayones = (resMap[d.Operario].Rayones || 0) + d.Rayones;
+                        resMap[d.Operario]['Video 360'] = (resMap[d.Operario]['Video 360'] || 0) + d['Video 360'];
+                        resMap[d.Operario].Formato = (resMap[d.Operario].Formato || 0) + d.Formato;
+                        resMap[d.Operario].Digital = (resMap[d.Operario].Digital || 0) + d.Digital;
+                        resMap[d.Operario].Total = (resMap[d.Operario].Total || 0) + d.Golpes + d.Rayones + d['Video 360'] + d.Formato + d.Digital;
+                    }
+                });
+
+                const alinResumen = {
+                    Operario: 'left', Golpes: 'center', Rayones: 'center',
+                    'Video 360': 'center', Formato: 'center', Digital: 'center', Total: 'center'
+                };
+                Object.values(resMap).forEach(row => {
+                    // null → undefined para que ExcelJS deje la celda vacía
+                    const r = wsR.addRow(colsResumen.map(c => {
+                        const val = row[c];
+                        // Si es Operario, devolver el nombre
+                        if (c === 'Operario') return val;
+                        // Si es 0 o null, devolver undefined para que la celda quede vacía en Excel
+                        return (val === 0 || val === null) ? undefined : val;
+                    }));
+                    for (let i = 1; i <= colsResumen.length; i++) {
+                        const cell = r.getCell(i);
+                        const col = colsResumen[i - 1];
+                        cell.alignment = { horizontal: alinResumen[col], vertical: 'middle' };
+                        aplicarBorde(cell);
+                    }
+                });
+
+                /* ── Descargar el archivo ──────────────────────────────────────── */
+                const buffer = await wb.xlsx.writeBuffer();
+                const blob = new Blob([buffer], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                alertar("Excel generado correctamente", 'success');
+
+            } catch (e) {
+                alertar("Error al generar Excel: " + e.message, 'error');
+            }
+            btn.disabled = false;
+        }
+    </script>
+
+</body>
+
+</html>

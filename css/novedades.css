@@ -1,0 +1,120 @@
+body {
+    margin: 0;
+    font-family: 'Inter', Arial, sans-serif;
+    background: #f2f2f2;
+}
+
+header {
+    background: #2e4a92;
+    color: white;
+    text-align: center;
+    padding: 18px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.card {
+    background: white;
+    margin: 15px;
+    padding: 20px;
+    border-radius: 18px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+h2 {
+    color: #2e4a92;
+    margin-top: 0;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+input[type="text"],
+input[type="date"],
+textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    box-sizing: border-box;
+    background: #f9f9f9;
+    margin-top: 6px;
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+    border: 1px solid #2e4a92;
+    background: #fff;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.checkbox-item input {
+    width: 22px;
+    height: 22px;
+}
+
+.checkbox-group {
+    margin-top: 5px;
+}
+
+button {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 20px;
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: 0.6;
+}
+
+.btn-guardar {
+    background: #1f9d45;
+    color: white;
+}
+
+.btn-reporte {
+    background: #2e4a92;
+    color: white;
+}
+
+.rango-fechas {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.rango-fechas input {
+    flex: 1;
+    min-width: 0;
+}
+
+@keyframes toastOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.95);
+    }
+}

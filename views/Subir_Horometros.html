@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Diario Horómetros</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link rel="icon" type="image/gif" href="../favicon.gif">
+    <link rel="apple-touch-icon" href="../favicon.gif">
+    <link rel="manifest" href="../manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2563eb">
+
+    <link rel="stylesheet" href="../css/horometros.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <header>Registro Diario Horómetros</header>
+
+    <div class="card">
+        <div class="fecha">
+            <strong>Fecha:</strong>
+            <input type="date" id="fechaInput">
+        </div>
+
+        <table id="tabla">
+            <thead>
+                <tr>
+                    <th>Equipo</th>
+                    <th>Horómetro</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+        <button id="btnGuardar" onclick="guardarDatos()">Guardar en Google Sheets</button>
+        <button style="background:#888; margin-top:10px;" onclick="location.href='../index.html'">Volver al
+            Menú</button>
+    </div>
+
+    <script>
+        // URL de la Web App de Google Sheets (Unificada para evitar errores)
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzooFwxG8Ya70dDJursu0JINJ6UMCrdhumilgDfbmR0tqgkzcnT6I_h3rULFI02FYpYHg/exec";
+
+        // Fecha automática (Hoy por defecto)
+        const hoy = new Date();
+        const yyyy = hoy.getFullYear();
+        const mm = String(hoy.getMonth() + 1).padStart(2, "0");
+        const dd = String(hoy.getDate()).padStart(2, "0");
+        const fechaParaInput = `${yyyy}-${mm}-${dd}`;
+        const fechaParaSheets = `${dd}/${mm}/${yyyy}`;
+
+        document.getElementById("fechaInput").value = fechaParaInput;
+
+        function obtenerFechaFormateada() {
+            const val = document.getElementById("fechaInput").value; // yyyy-mm-dd
+            if (!val) return "";
+            const partes = val.split("-");
+            return `${partes[2]}/${partes[1]}/${partes[0]}`; // dd/mm/yyyy
+        }
+
+        // Lista de equipos
+        const equipos = [
+            { equipo: "79", ciudad: "BUCARAMANGA", area: "FLETEO" },
+            { equipo: "80", ciudad: "BUCARAMANGA", area: "INTERNOS" },
+            { equipo: "81", ciudad: "BUCARAMANGA", area: "INTERNOS" },
+            { equipo: "82", ciudad: "BUCARAMANGA", area: "REPROCESOS" },
+            { equipo: "83", ciudad: "BUCARAMANGA", area: "LÍNEA 1" },
+            { equipo: "84", ciudad: "BUCARAMANGA", area: "LÍNEA 2" },
+            { equipo: "85", ciudad: "BUCARAMANGA", area: "LÍNEA 4" },
+            { equipo: "86", ciudad: "BUCARAMANGA", area: "RELEVOS" },
+            { equipo: "87", ciudad: "BUCARAMANGA", area: "FLETEO" },
+            { equipo: "88", ciudad: "BUCARAMANGA", area: "STAND BY" },
+            { equipo: "P1", ciudad: "BUCARAMANGA", area: "LÍNEA 3" },
+            { equipo: "P3", ciudad: "BUCARAMANGA", area: "RUTAS" },
+            { equipo: "P5", ciudad: "BUCARAMANGA", area: "BODEGA" },
+            { equipo: "P6", ciudad: "BUCARAMANGA", area: "STAND BY" },
+            { equipo: "P8", ciudad: "BUCARAMANGA", area: "LÍNEA 2" },
+            { equipo: "C3", ciudad: "BUCARAMANGA", area: "CENTRO DE ACOPIO" },
+            { equipo: "C4", ciudad: "BUCARAMANGA", area: "CUADRILLA" },
+            { equipo: "R1", ciudad: "BUCARAMANGA", area: "ALMACÉN" },
+            { equipo: "BT20", ciudad: "BUCARAMANGA", area: "ARMADO" },
+            { equipo: "BT21", ciudad: "BUCARAMANGA", area: "ARMADO" },
+            { equipo: "53", ciudad: "BARRANCABERMEJA", area: "TODO" },
+            { equipo: "76", ciudad: "BARRANCABERMEJA", area: "TODO" },
+            { equipo: "78", ciudad: "SAN GIL", area: "TODO" }
+        ];
+
+        const tbody = document.querySelector("#tabla tbody");
+
+        // Crear filas dinámicamente
+        equipos.forEach((item, index) => {
+            const fila = document.createElement("tr");
+            fila.innerHTML = `
+        <td>${item.equipo}</td>
+        <td>
+            <input type="number" inputmode="decimal" step="0.1" id="h${index}" placeholder="" oninput="guardarProgreso()">
+        </td>
+    `;
+            tbody.appendChild(fila);
+        });
+
+        // Evento para guardar fecha al cambiar
+        document.getElementById("fechaInput").addEventListener("change", guardarProgreso);
+
+        // Guardar progreso en localStorage
+        function guardarProgreso() {
+            const temp = {
+                fecha: document.getElementById("fechaInput").value,
+                valores: {}
+            };
+            equipos.forEach((_, i) => {
+                const val = document.getElementById("h" + i).value;
+                if (val !== "") temp.valores[i] = val;
+            });
+            localStorage.setItem("tmp_horometros", JSON.stringify(temp));
+        }
+
+        // Recuperar progreso
+        function recuperarProgreso() {
+            const data = localStorage.getItem("tmp_horometros");
+            if (data) {
+                const temp = JSON.parse(data);
+                if (temp.fecha) document.getElementById("fechaInput").value = temp.fecha;
+                for (const i in temp.valores) {
+                    const input = document.getElementById("h" + i);
+                    if (input) input.value = temp.valores[i];
+                }
+            }
+        }
+
+        // Llamar recuperación al cargar
+        document.addEventListener("DOMContentLoaded", () => {
+            recuperarProgreso();
+            cargarPlaceholders();
+        });
+
+        // Cargar últimos valores como placeholders desde Google Sheets
+        function cargarPlaceholders() {
+            // Mostrar estado de carga inicial en los inputs
+            equipos.forEach((_, i) => {
+                const input = document.getElementById("h" + i);
+                if (input) input.placeholder = "...";
+            });
+
+            fetch(`${WEB_APP_URL}?action=getLatest`)
+                .then(res => res.json())
+                .then(datos => {
+                    // Si el script devolvió un error específico
+                    if (datos.scriptError) {
+                        console.error("Error del Script:", datos.scriptError);
+                        equipos.forEach((_, i) => {
+                            const input = document.getElementById("h" + i);
+                            if (input) input.placeholder = "Error Script";
+                        });
+                        return;
+                    }
+
+                    // Mapear los datos recibidos a los inputs
+                    equipos.forEach((item, i) => {
+                        const input = document.getElementById("h" + i);
+                        if (input) {
+                            // Buscamos el equipo en los datos (asegurando que ambos sean tratados como strings)
+                            const valor = datos[String(item.equipo).trim()];
+                            if (valor !== undefined && valor !== null && valor !== "") {
+                                input.placeholder = valor;
+                            } else {
+                                input.placeholder = "N/A";
+                            }
+                        }
+                    });
+                })
+                .catch(err => {
+                    console.error("Error de red o JSON:", err);
+                    equipos.forEach((_, i) => {
+                        const input = document.getElementById("h" + i);
+                        if (input) input.placeholder = "Error Red";
+                    });
+                });
+        }
+
+        // Función para resetear campos
+        function resetearCampos() {
+            // Resetear inputs a vacío (o 0 según preferencia, aquí vacío para placeholder)
+            equipos.forEach((_, i) => {
+                document.getElementById("h" + i).value = "";
+            });
+            // Resetear fecha a hoy
+            const hoy = new Date();
+            const yyyy = hoy.getFullYear();
+            const mm = String(hoy.getMonth() + 1).padStart(2, "0");
+            const dd = String(hoy.getDate()).padStart(2, "0");
+            document.getElementById("fechaInput").value = `${yyyy}-${mm}-${dd}`;
+            // Limpiar localStorage
+            localStorage.removeItem("tmp_horometros");
+        }
+
+        // Función guardar datos en Google Sheets
+        function guardarDatos() {
+            const btn = document.getElementById("btnGuardar");
+            const filas = document.querySelectorAll("#tabla tbody tr");
+            filas.forEach(f => f.classList.remove("error"));
+
+            const registros = [];
+            let error = false;
+
+            const fechaSeleccionada = obtenerFechaFormateada();
+
+            for (let i = 0; i < equipos.length; i++) {
+                let valor = document.getElementById("h" + i).value.trim();
+                if (valor === "") {
+                    filas[i].classList.add("error");
+                    error = true;
+                } else {
+                    valor = valor.replace(",", "."); // punto decimal
+                    registros.push(`${fechaSeleccionada}|${equipos[i].equipo}|${equipos[i].ciudad}|${equipos[i].area}|${valor}`);
+                }
+            }
+
+            if (error) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Campos incompletos",
+                    text: "Faltan horómetros por diligenciar.",
+                    confirmButtonColor: "#27ae60"
+                });
+                return;
+            }
+
+            // Deshabilitar botón para evitar múltiples envíos
+            btn.disabled = true;
+            btn.textContent = "Guardando...";
+
+            const formData = new URLSearchParams();
+            formData.append("datos", registros.join("||"));
+
+            fetch(WEB_APP_URL, {
+                method: "POST",
+                body: formData
+            })
+                .then(res => res.json())
+                .then(d => {
+                    Swal.fire({
+                        icon: "success",
+                        title: "¡Guardado!",
+                        text: "Datos guardados correctamente en Google Sheets.",
+                        confirmButtonColor: "#27ae60"
+                    }).then(() => {
+                        resetearCampos();
+                        cargarPlaceholders();
+                    });
+                })
+                .catch(e => {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error al guardar",
+                        text: "Revisa que la Web App esté publicada como 'Cualquiera, incluso anónimo'.",
+                        confirmButtonColor: "#e74c3c"
+                    });
+                    console.error(e);
+                })
+                .finally(() => {
+                    // Re-habilitar botón al terminar (éxito o error)
+                    btn.disabled = false;
+                    btn.textContent = "Guardar en Google Sheets";
+                });
+        }
+    </script>
+
+</body>
+
+</html>
