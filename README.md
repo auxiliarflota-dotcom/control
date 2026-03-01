@@ -101,11 +101,5 @@ Para subir tus cambios a GitHub de forma fácil, solo tienes que:
 2.  Escribir un mensaje breve sobre lo que cambiaste (ej: "Ajuste de iconos").
 3.  Presionar **Enter**. El script hará el `add`, `commit` y `push` por ti automáticamente.
 
-### Configuración Inicial 🔗
-Si es la primera vez que vinculas esta carpeta, simplemente:
-1.  Haz doble clic en el archivo **`vincular_github.bat`**.
-    *Este script ya contiene tu dirección:* `https://github.com/auxiliarflota-dotcom/control.git`
-2.  Una vez termine, ya puedes usar siempre el archivo `subir.bat`.
-
 ---
-*Última actualización de backup: 28/02/2026 20:25*
+*Última actualización de backup: 28/02/2026 20:40*
