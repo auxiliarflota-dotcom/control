@@ -31,8 +31,8 @@
         <table id="tabla">
             <thead>
                 <tr>
-                    <th>Equipo</th>
-                    <th>Horómetro</th>
+                    <th>EQUIPO</th>
+                    <th>HORÓMETRO</th>
                 </tr>
             </thead>
             <tbody>
@@ -46,7 +46,7 @@
 
     <script>
         // URL de la Web App de Google Sheets (Unificada para evitar errores)
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzooFwxG8Ya70dDJursu0JINJ6UMCrdhumilgDfbmR0tqgkzcnT6I_h3rULFI02FYpYHg/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby_j1CsiDbf3a5BypKslcX2SjGuqTDtk_bdqLguSdeQ4Vk2_cdl3m-s_jNG6owCc31p0A/exec";
 
         // Fecha automática (Hoy por defecto)
         const hoy = new Date();
@@ -65,46 +65,41 @@
             return `${partes[2]}/${partes[1]}/${partes[0]}`; // dd/mm/yyyy
         }
 
-        // Lista de equipos
-        const equipos = [
-            { equipo: "79", ciudad: "BUCARAMANGA", area: "FLETEO" },
-            { equipo: "80", ciudad: "BUCARAMANGA", area: "INTERNOS" },
-            { equipo: "81", ciudad: "BUCARAMANGA", area: "INTERNOS" },
-            { equipo: "82", ciudad: "BUCARAMANGA", area: "REPROCESOS" },
-            { equipo: "83", ciudad: "BUCARAMANGA", area: "LÍNEA 1" },
-            { equipo: "84", ciudad: "BUCARAMANGA", area: "LÍNEA 2" },
-            { equipo: "85", ciudad: "BUCARAMANGA", area: "LÍNEA 4" },
-            { equipo: "86", ciudad: "BUCARAMANGA", area: "RELEVOS" },
-            { equipo: "87", ciudad: "BUCARAMANGA", area: "FLETEO" },
-            { equipo: "88", ciudad: "BUCARAMANGA", area: "STAND BY" },
-            { equipo: "P1", ciudad: "BUCARAMANGA", area: "LÍNEA 3" },
-            { equipo: "P3", ciudad: "BUCARAMANGA", area: "RUTAS" },
-            { equipo: "P5", ciudad: "BUCARAMANGA", area: "BODEGA" },
-            { equipo: "P6", ciudad: "BUCARAMANGA", area: "STAND BY" },
-            { equipo: "P8", ciudad: "BUCARAMANGA", area: "LÍNEA 2" },
-            { equipo: "C3", ciudad: "BUCARAMANGA", area: "CENTRO DE ACOPIO" },
-            { equipo: "C4", ciudad: "BUCARAMANGA", area: "CUADRILLA" },
-            { equipo: "R1", ciudad: "BUCARAMANGA", area: "ALMACÉN" },
-            { equipo: "BT20", ciudad: "BUCARAMANGA", area: "ARMADO" },
-            { equipo: "BT21", ciudad: "BUCARAMANGA", area: "ARMADO" },
-            { equipo: "53", ciudad: "BARRANCABERMEJA", area: "TODO" },
-            { equipo: "76", ciudad: "BARRANCABERMEJA", area: "TODO" },
-            { equipo: "78", ciudad: "SAN GIL", area: "TODO" }
-        ];
+        // Lista de equipos (ahora se carga dinámicamente)
+        let equipos = [];
 
         const tbody = document.querySelector("#tabla tbody");
 
+        // Función para cargar metadatos (Equipos)
+        async function fetchMetadata() {
+            tbody.innerHTML = `<tr><td colspan="2" style="padding:20px;">Cargando equipos...</td></tr>`;
+            try {
+                const res = await fetch(`${WEB_APP_URL}?action=getMetadata`);
+                const data = await res.json();
+                equipos = data.equipos || [];
+                renderTabla();
+                recuperarProgreso();
+                cargarPlaceholders();
+            } catch (err) {
+                console.error("Error cargando metadatos:", err);
+                tbody.innerHTML = `<tr><td colspan="2" style="padding:20px; color:red;">Error al cargar equipos</td></tr>`;
+            }
+        }
+
         // Crear filas dinámicamente
-        equipos.forEach((item, index) => {
-            const fila = document.createElement("tr");
-            fila.innerHTML = `
-        <td>${item.equipo}</td>
-        <td>
-            <input type="number" inputmode="decimal" step="0.1" id="h${index}" placeholder="" oninput="guardarProgreso()">
-        </td>
-    `;
-            tbody.appendChild(fila);
-        });
+        function renderTabla() {
+            tbody.innerHTML = "";
+            equipos.forEach((item, index) => {
+                const fila = document.createElement("tr");
+                fila.innerHTML = `
+                    <td>${item.equipo}</td>
+                    <td>
+                        <input type="number" inputmode="decimal" step="0.1" id="h${index}" placeholder="" oninput="guardarProgreso()">
+                    </td>
+                `;
+                tbody.appendChild(fila);
+            });
+        }
 
         // Evento para guardar fecha al cambiar
         document.getElementById("fechaInput").addEventListener("change", guardarProgreso);
@@ -116,8 +111,11 @@
                 valores: {}
             };
             equipos.forEach((_, i) => {
-                const val = document.getElementById("h" + i).value;
-                if (val !== "") temp.valores[i] = val;
+                const input = document.getElementById("h" + i);
+                if (input) {
+                    const val = input.value;
+                    if (val !== "") temp.valores[i] = val;
+                }
             });
             localStorage.setItem("tmp_horometros", JSON.stringify(temp));
         }
@@ -135,15 +133,15 @@
             }
         }
 
-        // Llamar recuperación al cargar
+        // Llamar carga inicial
         document.addEventListener("DOMContentLoaded", () => {
-            recuperarProgreso();
-            cargarPlaceholders();
+            fetchMetadata();
         });
 
         // Cargar últimos valores como placeholders desde Google Sheets
         function cargarPlaceholders() {
-            // Mostrar estado de carga inicial en los inputs
+            if (equipos.length === 0) return;
+
             equipos.forEach((_, i) => {
                 const input = document.getElementById("h" + i);
                 if (input) input.placeholder = "...";
@@ -152,35 +150,28 @@
             fetch(`${WEB_APP_URL}?action=getLatest`)
                 .then(res => res.json())
                 .then(datos => {
-                    // Si el script devolvió un error específico
                     if (datos.scriptError) {
                         console.error("Error del Script:", datos.scriptError);
                         equipos.forEach((_, i) => {
                             const input = document.getElementById("h" + i);
-                            if (input) input.placeholder = "Error Script";
+                            if (input) input.placeholder = "Error";
                         });
                         return;
                     }
 
-                    // Mapear los datos recibidos a los inputs
                     equipos.forEach((item, i) => {
                         const input = document.getElementById("h" + i);
                         if (input) {
-                            // Buscamos el equipo en los datos (asegurando que ambos sean tratados como strings)
                             const valor = datos[String(item.equipo).trim()];
-                            if (valor !== undefined && valor !== null && valor !== "") {
-                                input.placeholder = valor;
-                            } else {
-                                input.placeholder = "N/A";
-                            }
+                            input.placeholder = (valor !== undefined && valor !== null && valor !== "") ? valor : "N/A";
                         }
                     });
                 })
                 .catch(err => {
-                    console.error("Error de red o JSON:", err);
+                    console.error("Error de red:", err);
                     equipos.forEach((_, i) => {
                         const input = document.getElementById("h" + i);
-                        if (input) input.placeholder = "Error Red";
+                        if (input) input.placeholder = "Error";
                     });
                 });
         }

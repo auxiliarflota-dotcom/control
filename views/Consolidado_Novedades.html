@@ -35,42 +35,7 @@
         <input type="text" id="operario" placeholder="Buscar operario..." list="listaOperarios">
 
         <datalist id="listaOperarios">
-            <option>Alvaro David Tarazona Escalante</option>
-            <option>Camilo Andres Suarez Silva</option>
-            <option>Carlos Alberto Lascano Salgado</option>
-            <option>Danilo Ardila Pinzon</option>
-            <option>Darwin Milciades Torres Jimenez</option>
-            <option>Didier Piña Lozano</option>
-            <option>Duvan Octavio Hernandez Valero</option>
-            <option>Edgar Adrian Alvarez Flechas</option>
-            <option>Eduardo Orejarena Ponton</option>
-            <option>Edwin Fabian Arciniegas</option>
-            <option>Eliecer Amaya Luque</option>
-            <option>Eugenio Aguilar Hernandez</option>
-            <option>Fabio Enrique Niño Barillas</option>
-            <option>Favian Sly Roman Quesada</option>
-            <option>Freddy Urbina Guerra</option>
-            <option>Javier Ernesto Saavedra Gomez</option>
-            <option>Jhon Fredy Gonzalez Salinas</option>
-            <option>John Alexander Hernandez Valero</option>
-            <option>Jose Benito Infante</option>
-            <option>Juan Carlos Fierro Mendez</option>
-            <option>Juan Carlos Ramirez Mayorga</option>
-            <option>Justin Alexander Tapia Molina</option>
-            <option>Leonardo Grimaldos Ortiz</option>
-            <option>Luis Arturo Lizcano Moreno</option>
-            <option>Luis Felipe Gamboa Castro</option>
-            <option>Marco Fabian Ramirez Pinzon</option>
-            <option>Mario Cuadros</option>
-            <option>Miguel Angel Borrero Tarazona</option>
-            <option>Mustafa Damian Castro Olivero</option>
-            <option>Ricardo Henry Saavedra Lizarazo</option>
-            <option>Wilmar Martínez Gómez</option>
-            <option>Wilmer Alexander Joya Llanes</option>
-            <option>Wilmer Moreno Rojas</option>
-            <option>Yefer Meneses Ramon</option>
-            <option>Yerson Hernando Bautista Sanchez</option>
-            <option>Yordan Esneider Arriola Galvis</option>
+            <!-- Se carga dinámicamente -->
         </datalist>
 
         <label>Tipo de Novedad</label>
@@ -100,6 +65,29 @@
     </div>
 
     <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby_j1CsiDbf3a5BypKslcX2SjGuqTDtk_bdqLguSdeQ4Vk2_cdl3m-s_jNG6owCc31p0A/exec";
+
+        /* ── Carga de Metadatos (Operarios) ────────────────────────────────────── */
+        async function fetchMetadata() {
+            const inputOp = document.getElementById("operario");
+            inputOp.placeholder = "Cargando operarios...";
+            try {
+                const res = await fetch(`${WEB_APP_URL}?action=getMetadata`);
+                const data = await res.json();
+                const dl = document.getElementById("listaOperarios");
+                dl.innerHTML = "";
+                (data.operarios || []).forEach(op => {
+                    const opt = document.createElement("option");
+                    opt.value = op;
+                    dl.appendChild(opt);
+                });
+                inputOp.placeholder = "Buscar operario...";
+            } catch (err) {
+                console.error("Error cargando operarios:", err);
+                inputOp.placeholder = "Error al cargar";
+            }
+        }
+
         /* ── SweetAlert ────────────────────────────────────────────────────────── */
         function alertar(msg, icon = 'success') {
             const colors = { success: '#1f9d45', error: '#c0392b', warning: '#e67e22', info: '#2e4a92' };
@@ -112,6 +100,7 @@
 
         /* ── Fechas iniciales ───────────────────────────────────────────────────── */
         document.addEventListener("DOMContentLoaded", function () {
+            fetchMetadata();
             const hoy = new Date();
             const yyyy = hoy.getFullYear();
             const mm = String(hoy.getMonth() + 1).padStart(2, '0');

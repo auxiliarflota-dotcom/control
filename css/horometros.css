@@ -61,9 +61,16 @@ table {
 th,
 td {
     border: 1px solid white;
-    padding: 12px;
     text-align: center;
     font-size: 16px;
+}
+
+th {
+    padding: 12px;
+}
+
+td {
+    padding: 6px;
 }
 
 th {

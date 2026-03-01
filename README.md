@@ -11,7 +11,7 @@ Este archivo contiene una copia de seguridad del código de Google Apps Script u
 function doPost(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("Registros"); // <-- VERIFICA QUE TU HOJA SE LLAME ASÍ
+    var sheet = ss.getSheetByName("Registros");
     
     var datosRaw = e.parameter.datos;
     if (!datosRaw) {
@@ -49,35 +49,66 @@ function doPost(e) {
 }
 
 /**
- * Función para obtener los últimos horómetros registrados (GET)
+ * Función para obtener datos (GET)
  */
 function doGet(e) {
   try {
-    if (e.parameter.action === "getLatest") {
-      var ss = SpreadsheetApp.getActiveSpreadsheet();
-      var nombreHoja = "Registros"; // <-- CAMBIA ESTO SI TU HOJA TIENE OTRO NOMBRE
-      var sheet = ss.getSheetByName(nombreHoja);
-      
-      if (!sheet) {
-        throw new Error("No se encontró la hoja llamada '" + nombreHoja + "'. Por favor verifica el nombre.");
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var action = e.parameter.action;
+
+    // 1. Obtener Metadatos (Equipos y Operarios)
+    if (action === "getMetadata") {
+      var sheetEquipos = ss.getSheetByName("Equipos");
+      var sheetOperarios = ss.getSheetByName("OPI");
+
+      var rawEquipos = sheetEquipos.getDataRange().getValues();
+      var rawOperarios = sheetOperarios.getDataRange().getValues();
+
+      var listaEquipos = [];
+      for (var i = 1; i < rawEquipos.length; i++) {
+        var estado = String(rawEquipos[i][3] || "").trim().toLowerCase();
+        if (estado === "activo") { // Columna D: Estado
+          listaEquipos.push({
+            equipo: rawEquipos[i][0],
+            ciudad: rawEquipos[i][1],
+            area: rawEquipos[i][2]
+          });
+        }
       }
+
+      var listaOperarios = [];
+      for (var j = 1; j < rawOperarios.length; j++) {
+        var estadoOp = String(rawOperarios[j][1] || "").trim().toLowerCase();
+        if (estadoOp === "activo") { // Columna B: Estado
+          listaOperarios.push(rawOperarios[j][0]); // Columna A: Nombre
+        }
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({
+        equipos: listaEquipos,
+        operarios: listaOperarios
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 2. Obtener últimos horómetros (Existente)
+    if (action === "getLatest") {
+      var sheet = ss.getSheetByName("Registros");
+      if (!sheet) throw new Error("No se encontró la hoja 'Registros'");
       
       var data = sheet.getDataRange().getValues();
       var latest = {};
       
-      // Recorrer de abajo hacia arriba para encontrar el último valor de cada equipo
       for (var i = data.length - 1; i >= 1; i--) {
-        var equipo = String(data[i][1]).trim(); // Asegurar que el equipo sea un texto limpio
-        var valor = data[i][4];  // Columna E (Horómetro)
-        
+        var equipo = String(data[i][1]).trim();
+        var valor = data[i][4];
         if (equipo && latest[equipo] === undefined) {
           latest[equipo] = valor;
         }
       }
-      
       return ContentService.createTextOutput(JSON.stringify(latest))
         .setMimeType(ContentService.MimeType.JSON);
     }
+
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ "scriptError": err.message }))
       .setMimeType(ContentService.MimeType.JSON);
