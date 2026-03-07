@@ -19,6 +19,7 @@
 
     <link rel="stylesheet" href="../css/novedades.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="../js/config.js"></script>
 </head>
 
 <body>
@@ -65,7 +66,8 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby2qh617bRN5RXeJZsXou3J5f6uIpN_IKkvkS8VdZHotZiM8T4sxczwWULsPjUBdee5Iw/exec";
+        // URL de la Web App de Google Sheets (Centralizada en config.js)
+        const WEB_APP_URL = CONFIG.WEB_APP_URL;
 
         /* ── Carga de Metadatos (Operarios) ────────────────────────────────────── */
         async function fetchMetadata() {

@@ -104,6 +104,7 @@ input {
     border-radius: 8px;
     box-sizing: border-box;
     background: #f9f9f9;
+    font-weight: bold;
 }
 
 input:focus {

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitácora de Mantenimientos</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="apple-touch-icon" href="../favicon.png">
+    <link rel="manifest" href="../manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2563eb">
+
+    <link rel="stylesheet" href="../css/bitacora.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="../js/config.js"></script>
+</head>
+
+<body>
+
+    <header>Bitácora de Mantenimientos</header>
+
+    <div class="card">
+        <form id="bitacoraForm">
+            <label for="fechaDisplay">FECHA</label>
+            <input type="date" id="fechaDisplay">
+
+            <label for="actividad">ACTIVIDAD*</label>
+            <input type="text" id="actividad" placeholder="Descripción de la actividad" required>
+
+            <label for="flota">EQUIPO*</label>
+            <select id="flota" required>
+                <option value="">Cargando equipos...</option>
+            </select>
+
+            <label>TIPO DE MANTENIMIENTO*</label>
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="radio" id="tipoMC" name="tipoMantenimiento" value="MC">
+                    <label for="tipoMC" style="margin:0; font-weight:normal;">MC</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="radio" id="tipoMP" name="tipoMantenimiento" value="MP">
+                    <label for="tipoMP" style="margin:0; font-weight:normal;">MP</label>
+                </div>
+            </div>
+
+            <label for="tecnico">TÉCNICO*</label>
+            <input type="text" id="tecnico" placeholder="Nombre del técnico" required>
+
+            <label for="horometro">HORÓMETRO*</label>
+            <input type="number" id="horometro" step="0.1" placeholder="Registro de horómetro" required>
+
+            <label for="novedad">OBSERVACIONES</label>
+            <textarea id="novedad" rows="3" placeholder="Detalles adicionales del mantenimiento"></textarea>
+
+            <button type="button" class="btn-guardar" id="btnGuardar" onclick="enviarFormulario()">Guardar
+                Bitácora</button>
+            <button type="button" class="btn-volver" onclick="location.href='../index.html'">Volver al Menú</button>
+        </form>
+    </div>
+
+    <script>
+        // URLs Centralizadas en config.js
+        const WEB_APP_URL = CONFIG.WEB_APP_URL;
+        const BITACORA_APPSCRIPT_URL = CONFIG.BITACORA_APPSCRIPT_URL;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            inicializarFecha();
+            cargarEquipos();
+        });
+
+        function inicializarFecha() {
+            const hoy = new Date();
+            const yyyy = hoy.getFullYear();
+            const mm = String(hoy.getMonth() + 1).padStart(2, "0");
+            const dd = String(hoy.getDate()).padStart(2, "0");
+            document.getElementById("fechaDisplay").value = `${yyyy}-${mm}-${dd}`;
+        }
+
+        function getISOWeek(dateString) {
+            // Crear objeto fecha a partir de yyyy-mm-dd
+            const d = new Date(dateString + "T12:00:00");
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        async function cargarEquipos() {
+            const selectFlota = document.getElementById("flota");
+
+            // Intentar cargar desde cache
+            const cached = localStorage.getItem("cache_equipos");
+            if (cached) {
+                renderEquipos(JSON.parse(cached));
+            }
+
+            try {
+                const res = await fetch(`${WEB_APP_URL}?action=getMetadata`);
+                const data = await res.json();
+
+                if (data.equipos) {
+                    localStorage.setItem("cache_equipos", JSON.stringify(data.equipos));
+                    renderEquipos(data.equipos);
+                }
+            } catch (err) {
+                console.error("Error cargando equipos:", err);
+                if (!cached) {
+                    selectFlota.innerHTML = '<option value="">Error al cargar equipos</option>';
+                }
+            }
+        }
+
+        function renderEquipos(equipos) {
+            const selectFlota = document.getElementById("flota");
+            selectFlota.innerHTML = '<option value="">Seleccione un equipo</option>';
+
+            // Filtrar por TIPO = "Equipo"
+            equipos.forEach(item => {
+                if (item.tipo === "Equipo") {
+                    const opt = document.createElement("option");
+                    opt.value = item.equipo;
+                    opt.textContent = item.equipo;
+                    selectFlota.appendChild(opt);
+                }
+            });
+        }
+
+        async function enviarFormulario() {
+            const btn = document.getElementById("btnGuardar");
+            const fechaInput = document.getElementById("fechaDisplay").value;
+            const actividad = document.getElementById("actividad").value.trim();
+            const flota = document.getElementById("flota").value;
+            const tecnico = document.getElementById("tecnico").value.trim();
+            const horometro = document.getElementById("horometro").value;
+            const novedad = document.getElementById("novedad").value.trim();
+
+            // Obtener tipo seleccionado (radio)
+            const tipoRadio = document.querySelector('input[name="tipoMantenimiento"]:checked');
+            const tipo = tipoRadio ? tipoRadio.value : "";
+
+            // Validaciones
+            if (!actividad) {
+                Swal.fire("Error", "La ACTIVIDAD es obligatoria.", "warning");
+                return;
+            }
+
+            if (!flota) {
+                Swal.fire("Error", "El EQUIPO es obligatorio.", "warning");
+                return;
+            }
+
+            if (!tipo) {
+                Swal.fire("Error", "Debe seleccionar un TIPO DE MANTENIMIENTO (MC o MP).", "warning");
+                return;
+            }
+
+            if (!tecnico) {
+                Swal.fire("Error", "El TÉCNICO es obligatorio.", "warning");
+                return;
+            }
+
+            if (!horometro) {
+                Swal.fire("Error", "El HORÓMETRO es obligatorio.", "warning");
+                return;
+            }
+
+            if (!fechaInput) {
+                Swal.fire("Error", "La FECHA es obligatoria.", "warning");
+                return;
+            }
+
+            // Cálculos automáticos basados en la fecha seleccionada
+            const semana = getISOWeek(fechaInput);
+            const partesFecha = fechaInput.split("-"); // yyyy-mm-dd
+            const fechaFormateada = `${partesFecha[2]}/${partesFecha[1]}/${partesFecha[0]}`; // dd/mm/yyyy
+
+            const datos = {
+                semana: semana,
+                fecha: fechaFormateada,
+                actividad: actividad,
+                flota: flota,
+                tipo: tipo,
+                tecnico: tecnico,
+                horometro: horometro,
+                novedad: novedad
+            };
+
+            btn.disabled = true;
+            btn.textContent = "Enviando...";
+
+            try {
+                const formData = new URLSearchParams();
+                for (const key in datos) {
+                    formData.append(key, datos[key]);
+                }
+
+                const res = await fetch(BITACORA_APPSCRIPT_URL, {
+                    method: "POST",
+                    body: formData,
+                    mode: "cors"
+                });
+
+                const result = await res.json();
+
+                if (result.status === "success") {
+                    Swal.fire("¡Guardado!", "La bitácora se ha registrado correctamente.", "success").then(() => {
+                        document.getElementById("bitacoraForm").reset();
+                        inicializarFecha();
+                    });
+                } else {
+                    throw new Error(result.message || "Error al guardar en el servidor");
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire("Error", "No se pudo guardar: " + err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Guardar Bitácora";
+            }
+        }
+    </script>
+</body>
+
+</html>
