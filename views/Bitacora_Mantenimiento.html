@@ -64,8 +64,7 @@
     </div>
 
     <script>
-        // URLs Centralizadas en config.js
-        const WEB_APP_URL = CONFIG.WEB_APP_URL;
+        // URL Centralizada en config.js para Bitácora
         const BITACORA_APPSCRIPT_URL = CONFIG.BITACORA_APPSCRIPT_URL;
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -93,17 +92,17 @@
             const selectFlota = document.getElementById("flota");
 
             // Intentar cargar desde cache
-            const cached = localStorage.getItem("cache_equipos");
+            const cached = localStorage.getItem("cache_equipos_bitacora");
             if (cached) {
                 renderEquipos(JSON.parse(cached));
             }
 
             try {
-                const res = await fetch(`${WEB_APP_URL}?action=getMetadata`);
+                const res = await fetch(`${BITACORA_APPSCRIPT_URL}?action=getMetadata`);
                 const data = await res.json();
 
                 if (data.equipos) {
-                    localStorage.setItem("cache_equipos", JSON.stringify(data.equipos));
+                    localStorage.setItem("cache_equipos_bitacora", JSON.stringify(data.equipos));
                     renderEquipos(data.equipos);
                 }
             } catch (err) {
